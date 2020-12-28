@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Overwolf Base by xNocken - In-Game page</title>
+</head>
+
+<body class="in-game">
+  <!-- -------------------------------- Header ------------------------------- -->
+
+  <header id="header" class="app-header">
+    <img src="../../img/header_icon.svg" />
+    <h1>Overwolf Base by xNocken</h1>
+    <h1 style="margin: auto;">
+      Show/Hide:
+      <span id="hotkey" style="font-weight: bold; color: white;"></span>
+    </h1>
+    <div class="window-controls-group">
+      <button class="icon window-control support">
+        <svg>
+          <use xlink:href="/img/header_icons.svg#window-control_support" />
+        </svg>
+        <div class="tooltip">
+          <a target="_blank" href="https://discord.gg/v5cfBTq">Talk to us on Discord</a><br />
+          <a target="_blank" href="http://support.overwolf.com/">FAQ page at Overwolf</a>
+          <hr />
+          <h3>Social Media</h3>
+          <div class="socialIcons">
+            <a target="_blank" href="https://twitter.com/theoverwolf">
+              <img src="../../img/twitter.svg" />
+            </a>
+            <a target="_blank" href="https://www.facebook.com/Overwolf/">
+              <img src="../../img/facebook.svg" />
+            </a>
+            <a target="_blank" href="https://www.reddit.com/r/Overwolf/">
+              <img src="../../img/reddit.png" />
+            </a>
+          </div>
+        </div>
+      </button>
+      <a class="icon window-control" href="overwolf://settings/hotkeys">
+        <svg>
+          <use xlink:href="/img/header_icons.svg#window-control_settings" />
+        </svg>
+      </a>
+      <button class="icon window-control" id="minimizeButton">
+        <svg>
+          <use xlink:href="/img/header_icons.svg#window-control_minimize" />
+        </svg>
+      </button>
+      <button class="icon window-control" id="maximizeButton">
+        <svg>
+          <use xlink:href="/img/header_icons.svg#window-control_maximize" />
+        </svg>
+      </button>
+      <button class="icon window-control window-control-close" id="closeButton">
+        <svg>
+          <use xlink:href="/img/header_icons.svg#window-control_close" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- --------------------------------- Main -------------------------------- -->
+  <main>
+    <div class="screen courses">
+      <div class="options">
+        <div id="courses-add">Add</div>
+      </div>
+
+      <div class="list" id="courses-list"></div>
+    </div>
+
+    <div class="screen detail" style="display: none;">
+      <div class="options">
+        <div id="back">Back</div>
+        <div id="start-recording">Start Recording</div>
+        <div id="add-score">Add score</div>
+      </div>
+
+      <table class="list" id="courses-list">
+        <tr class="header">
+          <th class="score">Score</th>
+          <th class="recTime">Date</th>
+          <th class="delete">Options</th>
+        </tr>
+      </table>
+    </div>
+  </main>
+
+
+  <!-- --------------------------------- Templates --------------------------- -->
+
+  <template id="courses">
+    <div class="entry" data-id=":id">
+      <div class="name">:name</div>
+      <div class="desc">:desc</div>
+      <div class="label-wrapper">
+        <span>Best score</span>
+        <div class="bestTime">:bestTime</div>
+      </div>
+
+      <div class="label-wrapper">
+        <span>Last score</span>
+        <div class="lastTime">:lastTime</div>
+      </div>
+    </div>
+  </template>
+
+  <template id="times">
+    <tr class="entry">
+      <th class="score">:score</th>
+      <th class="recTime">:recTime</th>
+      <th class="delete">Delete</th>
+    </tr>
+  </template>
+
+  <!-- --------------------------------- Add Modal --------------------------- -->
+
+  <div class="modal" id="add-course-modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-close">X</div>
+
+      <div class="form-entry">
+        <label for="type">Name</label>
+        <input type="text" class="name">
+      </div>
+      <div class="form-entry">
+        <label for="type">Description</label>
+        <input type="text" class="desc">
+      </div>
+      <div class="form-entry">
+        <label for="type">Type</label>
+        <select class="type" name="type">
+          <option value="time">Time</option>
+          <option value="score">Score</option>
+        </select>
+      </div>
+      <div class="form-entry">
+        <label for="higherIsBetter">Is higher better?</label>
+        <input type="checkbox" name="higherIsBetter" class="higherIsBetter">
+      </div>
+      <div class="form-entry form-entry--full-length">
+        <label for="type">Threshhold</label>
+        <input type="number" class="threshhold" placeholder="">
+      </div>
+      <div class="form-entry">
+        <label for="type">Start Position</label>
+        <label>Current Pos X/Y/Z: <span class="startPosPreview">None</span></label>
+        <button class="startPos">Use current Position</button>
+        <button class="startPosClear">Clear</button>
+      </div>
+      <div class="form-entry">
+        <label for="type">End Position</label>
+        <label>Current Pos X/Y/Z: <span class="endPosPreview">None</span></label>
+        <button class="endPos">Use current Position</button>
+        <button class="endPosClear">Clear</button>
+      </div>
+      <div class="form-submit">
+        <button class="add">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- -------------------------------- Modal -------------------------------- -->
+  <div id="exitMinimizeModal" class="modal">
+    <div class="modal-content">
+      <h3>Exit the app?</h3>
+      <p>
+        Exiting the app will close all the app windows and terminate the app
+        process.<br />
+        <br />
+        Are you sure?
+      </p>
+      <span class="buttonBar">
+        <button id="minimize" class="modalButton">
+          Minimize
+        </button>
+        <button id="exit" class="modalButton">
+          Exit
+        </button>
+      </span>
+    </div>
+  </div>
+</body>
+
+</html>
