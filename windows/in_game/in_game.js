@@ -7,8 +7,9 @@ import { interestingFeatures, hotkeys, windowNames } from "../../consts";
 import Player from '../../classes/Player';
 import Item from "../../classes/item";
 import events from './main';
-import WindowState = overwolf.windows.WindowState;
 import main from "./main";
+
+const WindowState = overwolf.windows.WindowState;
 
 // The window displayed in-game while a Fortnite game is running.
 // It listens to all info events and to the game events listed in the consts.ts file
@@ -16,15 +17,14 @@ import main from "./main";
 // The window also sets up Ctrl+F as the minimize/restore hotkey.
 // Like the background window, it also implements the Singleton design pattern.
 class InGame extends AppWindow {
-  private static _instance: InGame;
-  private _fortniteGameEventsListener: OWGamesEvents;
-  private player: Player = new Player();
-  private lastInventory: object = {};
-  private matchInfo = {};
-  private phase: string = '';
 
-  private constructor() {
+  constructor() {
     super(windowNames.inGame);
+
+    this.player = new Player();
+    this.lastInventory = {};
+    this.matchInfo = {};
+    this.phase = '';
 
     this.setToggleHotkeyBehavior();
     this.setToggleHotkeyText();
@@ -36,7 +36,7 @@ class InGame extends AppWindow {
       interestingFeatures);
   }
 
-  public static instance() {
+  static instance() {
     if (!this._instance) {
       this._instance = new InGame();
     }
@@ -44,25 +44,25 @@ class InGame extends AppWindow {
     return this._instance;
   }
 
-  public run() {
+  run() {
     this._fortniteGameEventsListener.start();
     main.onLoad();
   }
 
-  private onInfoUpdates(info) {
-    Object.keys(info).forEach((eventName: string) => {
+  onInfoUpdates(info) {
+    Object.keys(info).forEach((eventName) => {
       if (eventName === 'inventory') {
-        Object.keys(info.inventory).forEach((item: string) => {
-          const index: number = parseInt(item.replace('item_', ''), 10)
+        Object.keys(info.inventory).forEach((item) => {
+          const index = parseInt(item.replace('item_', ''), 10)
 
           this.onInventory(index, JSON.parse(info.inventory[`item_${index}`]));
         })
       }
 
       if (eventName === 'quickbar') {
-        Object.keys(info.quickbar).forEach((item: string) => {
+        Object.keys(info.quickbar).forEach((item) => {
           console.log(info);
-          const index: number = parseInt(item.replace('quickbar_', ''), 10)
+          const index = parseInt(item.replace('quickbar_', ''), 10)
 
           this.onQuickbar(index, info.quickbar[item], info.quickbar[item] ? JSON.parse(info.quickbar[item]).name : null);
         })
@@ -85,7 +85,7 @@ class InGame extends AppWindow {
       }
 
       if (eventName === 'game_info') {
-        Object.keys(info.game_info).forEach((gameInfo: string) => {
+        Object.keys(info.game_info).forEach((gameInfo) => {
           if (gameInfo === 'location') {
             this.onLocation(JSON.parse(info.game_info.location));
           }
@@ -100,7 +100,7 @@ class InGame extends AppWindow {
     events.update(this.player, this.matchInfo, this.phase);
   }
 
-  private onLocation(location: Vector3) {
+  onLocation(location) {
     this.player.location = location;
 
     if (main.onLocation) {
@@ -108,33 +108,33 @@ class InGame extends AppWindow {
     }
   }
 
-  private onPhase(phase: string) {
+  onPhase(phase) {
     this.phase = phase;
   }
 
-  private onSelectSlot(selectData) {
+  onSelectSlot(selectData) {
     this.player.selected_slot = selectData;
   }
 
-  private onMatchInfo(selectData: Object) {
+  onMatchInfo(selectData) {
     this.matchInfo = {
       ...this.matchInfo,
       ...selectData,
     };
   }
 
-  private onSelectMaterial(selectData: number) {
+  onSelectMaterial(selectData) {
     this.player.selectedMaterial = selectData;
   }
 
-  private onMe(data) {
+  onMe(data) {
     this.player.health = parseInt(data.health || this.player.health, 10);
     this.player.shield = parseInt(data.shield || this.player.shield, 10);
     this.player.name = data.name || this.player.name;
     this.player.accuracy = data.accuracy || this.player.accuracy;
   }
 
-  private onQuickbar(index: number, empty: boolean, name: string) {
+  onQuickbar(index, empty, name) {
     if (empty) {
       this.player.hotbar[index] = null;
     } {
@@ -142,7 +142,7 @@ class InGame extends AppWindow {
     }
   }
 
-  private onInventory(index: number, data) {
+  onInventory(index, data) {
     if (data) {
       this.lastInventory[data.name] = index;
 
@@ -158,7 +158,7 @@ class InGame extends AppWindow {
   }
 
   // Special events will be highlighted in the event log
-  private onNewEvents(e) {
+  onNewEvents(e) {
     console.log(JSON.stringify(e));
     e.events.forEach((event) => {
       if (event.name === 'killed') {
@@ -206,14 +206,14 @@ class InGame extends AppWindow {
   }
 
   // Displays the toggle minimize/restore hotkey in the window header
-  private async setToggleHotkeyText() {
+  async setToggleHotkeyText() {
     const hotkeyText = await OWHotkeys.getHotkeyText(hotkeys.toggle);
     const hotkeyElem = document.getElementById('hotkey');
     hotkeyElem.textContent = hotkeyText;
   }
 
   // Sets toggleInGameWindow as the behavior for the Ctrl+F hotkey
-  private async setToggleHotkeyBehavior() {
+  async setToggleHotkeyBehavior() {
     const toggleInGameWindow = async hotkeyResult => {
       console.log(`pressed hotkey for ${hotkeyResult.featureId}`);
       const inGameState = await this.getWindowState();

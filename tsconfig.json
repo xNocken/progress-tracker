@@ -9,7 +9,7 @@
     "noImplicitAny": false,
     "strictNullChecks": false,
     "typeRoots": [
-      "/types", 
+      "/types",
       "/node_modules/@overwolf/types"
     ],
     "rootDirs": [

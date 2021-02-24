@@ -1,19 +1,31 @@
 import standard from './standard';
+import Chart from 'chart.js';
 
 import * as $ from 'jquery';
 let createCount = 0;
 const recording = {};
-let startPos: Vector3 = null;
-let endPos: Vector3 = null;
-let globalData: Data;
+let startPos = null;
+let endPos = null;
+let globalData;
 
-let pos: Vector3 = {
+const labelMap = {
+  time: 'Time in seconds',
+  fallback: 'Score'
+}
+
+const responseMap = [
+  '',
+  'Congrats! You got a new Personal Best!',
+  'Good Job! You equaled your PB.'
+]
+
+let pos = {
   x: 0,
   y: 0,
   z: 0,
 };
 
-const generateUId = (): string => {
+const generateUId = () => {
   let id = 0;
 
   id += new Date().getTime();
@@ -23,8 +35,8 @@ const generateUId = (): string => {
   return id.toString();
 };
 
-const saveData = (data: Data): void => {
-  const newData: Data = {
+const saveData = (data) => {
+  const newData = {
     ...data,
     course: data.course.filter((a) => a),
   }
@@ -33,15 +45,15 @@ const saveData = (data: Data): void => {
   window.localStorage.setItem('data', JSON.stringify(newData));
 };
 
-const getData = (): Data => {
+const getData = () => {
   if (globalData) {
     return globalData;
   }
 
-  let data = JSON.parse(window.localStorage.getItem('data')) as Data;
+  let data = JSON.parse(window.localStorage.getItem('data'));
 
   if (!data) {
-    data = {} as Data;
+    data = {};
     data.course = [];
   }
 
@@ -55,23 +67,50 @@ const getData = (): Data => {
   return data;
 };
 
-const addScore = (courseId: string, score: number) => {
-  let data: Data = getData();
+const addScore = (courseId, score) => {
+  let data = getData();
+  let scoreState = 0;
 
   for (let i = 0; i < data.course.length; i++) {
     if (data.course[i].id === courseId) {
+      let highest = data.course[i].higherIsBetter ? 0 : Infinity;
+
+      data.course[i].times.forEach((time) => {
+        if (data.course[i].higherIsBetter) {
+          if (highest < time.score) {
+            highest = time.score;
+          }
+        } else {
+          if (highest > time.score) {
+            highest = time.score;
+          }
+        }
+      });
+
+      if (data.course[i].higherIsBetter) {
+        if (highest < score) {
+          scoreState = 1; // pb
+        } else if (highest === score) {
+          scoreState = 2; // equal
+        }
+      }
+
       data.course[i].times.push({
         id: generateUId(),
         score,
         timeOfRecording: new Date(),
-      })
+      });
+
+      break;
     }
   }
 
   saveData(data);
+
+  return scoreState;
 };
 
-const startRecording = (id: string) => {
+const startRecording = (id) => {
   if (recording[id]) {
     return;
   }
@@ -79,7 +118,7 @@ const startRecording = (id: string) => {
   recording[id] = new Date().getTime();
 };
 
-const stopRecording = (id: string) => {
+const stopRecording = (id) => {
   if (!recording[id]) {
     return;
   }
@@ -90,7 +129,7 @@ const stopRecording = (id: string) => {
   addScore(id, diff);
 };
 
-const toggleRecording = (id: string) => {
+const toggleRecording = (id) => {
   if (recording[id]) {
     stopRecording(id);
     return false;
@@ -100,20 +139,20 @@ const toggleRecording = (id: string) => {
   }
 };
 
-const convertToLength = (nmber: number, length: number = 2): string => {
+const convertToLength = (nmber, length = 2) => {
   const stringg = nmber.toString();
 
   return `${'0'.repeat(length - stringg.length)}${stringg}`;
 };
 
-const convertToTime = (ms: number, useMs: boolean = false): string => {
-  const time: Date = new Date(ms);
+const convertToTime = (ms, useMs = false) => {
+  const time = new Date(ms);
 
   return `${convertToLength(time.getMinutes() + ((time.getHours() - 1) * 60))}:${convertToLength(time.getSeconds())}${useMs ? '.' + convertToLength(time.getMilliseconds(), 3) : ''}`;
 };
 
-const loadDetail = (id: string) => {
-  let data: Data = getData();
+const loadDetail = (id) => {
+  let data = getData();
   const targetCourse = data.course.filter((course) => course.id === id)[0];
   const $detail = $('.detail');
 
@@ -152,15 +191,61 @@ const loadDetail = (id: string) => {
   $list.find('.entry').remove();
   const template = $('template#times').html();
 
-  targetCourse.times.slice(0, targetCourse.times.length).sort((a, b) => new Date(b.timeOfRecording).getTime() - new Date(a.timeOfRecording).getTime()).forEach((time: TimeEntry) => {
+  const days = {};
+  const daysCount = {};
+
+  targetCourse.times.slice(0).sort((a, b) => new Date(b.timeOfRecording).getTime() - new Date(a.timeOfRecording).getTime()).forEach((time) => {
+    const date = new Date(time.timeOfRecording);
+    const currentDay = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+    if (!days[currentDay]) {
+      days[currentDay] = time.score;
+      daysCount[currentDay] = 1;
+    }
+
+    days[currentDay] += time.score;
+    daysCount[currentDay] += 1;
+
     $list.append(template
       .replace(':score', targetCourse.type === 'time' ? convertToTime(time.score, true) : time.score.toString())
-      .replace(':recTime', new Date(time.timeOfRecording).toLocaleString())
+      .replace(':recTime', date.toLocaleString())
       .replace(':id', time.id)
     )
   });
 
-  $list.find('.delete').on('click', ({target}) => {
+  const labels = [];
+  const dataa = [];
+
+  Object.entries(days).reverse().forEach(([day, score]) => {
+    const avaragescore = score / daysCount[day];
+    labels.push(day);
+    dataa.push(targetCourse.type === 'time' ? avaragescore / 1000 : avaragescore);
+  });
+
+  const ctx = $('#detail-graph')[0];
+
+  var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: labelMap[targetCourse.type] || labelMap.fallback,
+        data: dataa,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.2)',
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+    }
+  });
+
+  $list.find('.delete').on('click', ({ target }) => {
     const $target = $(target);
     const timeId = $target.data('id').toString();
 
@@ -182,7 +267,7 @@ const loadDetail = (id: string) => {
 };
 
 const loadCourses = () => {
-  let data: Data = getData();
+  let data = getData();
   $('.screen').hide();
   $('.courses').show();
 
@@ -191,12 +276,12 @@ const loadCourses = () => {
 
   $courses.empty();
 
-  data.course.forEach((course: Course) => {
-    let bestScore: string = 'No scores Recorded';
-    let tempScore: number;
-    let lastScore: string;
+  data.course.forEach((course) => {
+    let bestScore = 'No scores Recorded';
+    let tempScore;
+    let lastScore;
 
-    course.times.forEach((time: TimeEntry) => {
+    course.times.forEach((time) => {
       if (course.higherIsBetter && (time.score > tempScore || !tempScore)) {
         tempScore = time.score;
       } else if (!course.higherIsBetter && (time.score < tempScore || !tempScore)) {
@@ -234,7 +319,7 @@ const loadCourses = () => {
 };
 
 const onLoad = () => {
-  let data: Data = getData();
+  let data = getData();
 
   $('.modal-close').on('click', ({ target }) => {
     $(target).closest('.modal').hide();
@@ -276,7 +361,7 @@ const onLoad = () => {
         endPos,
         threshhold: parseInt($courseModal.find('.threshhold').val().toString()) || 0,
         id: generateUId(),
-      } as Course)
+      })
 
       saveData(data);
       loadCourses();
@@ -288,15 +373,15 @@ const onLoad = () => {
     const id = $target.closest('#add-score-modal').data('id');
     const score = $target.closest('#add-score-modal').find('.score').val();
 
-    addScore(id, parseInt(score.toString()));
+    $('#add-score-modal .add-response').text(responseMap[addScore(id, parseInt(score.toString()))]);
     loadDetail(id);
   });
 
   loadCourses();
 };
 
-const onLocation = (location: Vector3) => {
-  let data: Data = getData();
+const onLocation = (location) => {
+  let data = getData();
   pos = location;
 
   data.course.forEach((course) => {

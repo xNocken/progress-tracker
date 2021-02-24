@@ -80,6 +80,10 @@
         <div id="delete-course">Delete</div>
       </div>
 
+      <div class="detail-graph">
+        <canvas id="detail-graph" height="100"></canvas>
+      </div>
+
       <table class="list" id="courses-list">
         <tr class="header">
           <th class="score">Score</th>
@@ -111,9 +115,9 @@
 
   <template id="times">
     <tr class="entry">
-      <th class="score">:score</th>
-      <th class="recTime">:recTime</th>
-      <th class="delete" data-id=":id">Delete</th>
+      <td class="score">:score</td>
+      <td class="recTime">:recTime</td>
+      <td class="delete" data-id=":id">Delete</td>
     </tr>
   </template>
   <!-- --------------------------------- Add Modal --------------------------- -->
@@ -168,8 +172,9 @@
       <div class="modal-close">X</div>
 
       <div class="form-entry">
+        <p class="add-response"></p>
         <label for="type">Score</label>
-        <input type="text" class="score">
+        <input type="number" class="score">
       </div>
       <div class="form-submit">
         <button class="add">Add</button>
